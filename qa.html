@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+</head>
+
+<body>
+	<section class="hero is-info">
+		<div class="hero-body">
+			<h1 class="title">Problem Calculator</h1>
+			<h2 class="subtitle mb-0 pb-0">Oh no! Our designer has gone on strike because our open source framework does
+				not support Pantone colour matching.</h2>
+			<h2 class="subtitle mt-0 pt-0">The only hope for our company is to hire an excellent QA to ensure the
+				quality of the product. Are you up to the challenge?</h2>
+			<h2 class="subtitle mt-0 pt-0">Please use the interface below to conduct your testing. Refreshing the page
+				will reset all data.</h2>
+		</div>
+	</section>
+	<section class="hero">
+		<div class="hero-body">
+			<div class="container">
+				<h1 class="title">You are viewing</h1>
+				<button id="select-problem-1" class="button is-success">Problem 1</button>
+				<button id="select-problem-2" class="button">Problem 2</button>
+			</div>
+		</div>
+	</section>
+	<div class="container">
+		<h1 id="problem-title" class="title"></h1>
+		<h2 id="problem-description" class="subtitle"></h2>
+		<input id="name-input" class="input" type="text" placeholder="Name">
+		<input id="answer-input" class="input mt-2 mb-2" type="text" placeholder="Answer">
+		<div id="error-message" class="notification is-hidden is-danger is-light">
+			Name and Answer fields must be filled in correctly.
+		</div>
+		<div class="has-text-right">
+			<button id="answer-submit" class="button ml-auto">Submit</button>
+		</div>
+	</div>
+	<div class="container mt-6 pt-6">
+		<h1 id="leaderboard-title" class="title">Problem 1 Leaderboard</h1>
+		<table class="table is-fullwidth">
+			<thead>
+				<td>Name</td>
+				<td>Correct Answer?</td>
+				<td>Submission Time</td>
+			</thead>
+			<tbody id="leaderboard-table">
+			</tbody>
+		</table>
+	</div>
+
+	<script>
+		// The problem selection global. Defaults to problem 1
+		let selectedId = "select-problem-1";
+
+		// Global to store the page state + content
+		const copyContent = {
+			"select-problem-1": {
+				title: "Problem 1",
+				description: "If we list all the natural numbers below 10 that are multiples of 3 or 5, we get 3, 5, 6 and 9. The sum of these multiples is 23. Find the sum of all the multiples of 3 or 5 below 1000.",
+				answer: 233168,
+				history: [{
+					name: "Nich",
+					value: 12,
+					time: new Date(new Date().getTime() + 100) // Ensure date is always in future to guarantee sorting
+				}, {
+					name: "Jon",
+					value: 233168,
+					time: new Date()
+				}],
+			},
+			"select-problem-2": {
+				title: "Problem 2",
+				description: "The prime factors of 13195 are 5, 7, 13 and 29. What is the largest prime factor of the number 600851475143?",
+				answer: undefined, // If answer undefined, then it is always right to allow for QA bugs.
+				history: [],
+			}
+		}
+
+		function handleSubmit() {
+			// Only actually force the answer to be defined to allow for QA bug.
+			if (!document.getElementById("answer-input").value) {
+				document.getElementById("error-message").classList.remove("is-hidden");
+				return;
+			}
+
+			copyContent[selectedId].history.push({
+				name: document.getElementById("name-input").value,
+				value: document.getElementById("answer-input").value,
+				time: new Date(),
+			});
+
+			// Clear the form fields to allow for a nice UX
+			document.getElementById("name-input").value = "";
+			document.getElementById("answer-input").value = "";
+
+			// Call handleChange to re-render the page with the new history
+			handleChange(selectedId);
+		}
+
+		function handleChange(newProblem) {
+			// Set the global problem
+			selectedId = newProblem;
+
+			// Render the buttons
+			document.getElementById("error-message").classList.add("is-hidden");
+			document.getElementById("select-problem-1").classList.remove("is-success");
+			document.getElementById("select-problem-2").classList.remove("is-success");
+
+			// Slightly modify the "Problem Submission" heading to introduce a QA bug
+			if (newProblem === "select-problem-2") {
+				document.getElementById("problem-title").classList.add("mb-0", "is-size-3")
+				document.getElementById("problem-title").classList.remove("title")
+			} else {
+				document.getElementById("problem-title").classList.remove("subtitle", "mb-0", "is-size-3")
+				document.getElementById("problem-title").classList.add("title")
+			}
+
+			// Re-render the content forms / section / copy
+			document.getElementById(newProblem).classList.add("is-success");
+			document.getElementById("problem-title").innerText = copyContent[newProblem].title + " Submission";
+			document.getElementById("problem-description").innerText = copyContent[newProblem].description;
+			document.getElementById("leaderboard-title").innerText = copyContent[newProblem].title + " Leaderboard";
+
+			document.getElementById("leaderboard-table").replaceChildren([]);
+
+			// Incorrectly sort the table content, then render it
+			copyContent[newProblem].history.slice().sort((a, b) => {
+				return b.time - a.time;
+			}).forEach(history => {
+				const tableRow = document.createElement("tr");
+				const nameCell = document.createElement("td");
+				nameCell.innerText = history.name;
+
+				const correctCell = document.createElement("td");
+				correctCell.innerText =  copyContent[newProblem].answer ? (history.value == copyContent[newProblem].answer ? "Yes" : "No") : "Yes";
+
+				const timeCell = document.createElement("td");
+				timeCell.innerText = new Intl.DateTimeFormat("en-AU", {
+					hour: "numeric",
+				}).format(history.time).replace(" ", "")
+
+				tableRow.appendChild(nameCell);
+				tableRow.appendChild(correctCell);
+				tableRow.appendChild(timeCell);
+
+				document.getElementById("leaderboard-table").appendChild(tableRow);
+			});
+		}
+
+		document.getElementById("select-problem-1").addEventListener("click", function () {
+			handleChange("select-problem-1")
+		});
+		document.getElementById("select-problem-2").addEventListener("click", function () {
+			handleChange("select-problem-2")
+		});
+		document.getElementById("answer-submit").addEventListener("click", handleSubmit);
+		handleChange("select-problem-1");
+	</script>
+</body>
+
+</html>
